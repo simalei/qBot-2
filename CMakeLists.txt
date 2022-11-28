@@ -18,7 +18,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES})
 add_definitions(-DCURL_STATICLIB)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-        libraries/imgui
+        libraries/imgui-spectrum
         libraries/imgui-hook
         libraries/gd.h
         libraries/gd.h/include

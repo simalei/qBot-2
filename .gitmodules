@@ -13,3 +13,6 @@
 [submodule "libraries/curl"]
 	path = libraries/curl
 	url = https://github.com/curl/curl
+[submodule "libraries/imgui"]
+	path = libraries/imgui
+	url = https://github.com/ocornut/imgui
