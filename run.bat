@@ -1,0 +1,6 @@
+@echo off
+
+echo Copying qBot.dll to extensions...
+copy "cmake-build-release\Release\qBot.dll" "C:\Program Files (x86)\Steam\steamapps\common\Geometry Dash\extensions"
+echo Starting GD...
+start steam://rungameid/322170
