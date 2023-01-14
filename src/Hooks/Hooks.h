@@ -7,6 +7,7 @@
 
 #include <includes.h>
 #include "PlayLayer/PlayLayer.h"
+#include "FPS/FPS.h"
 
 namespace Hooks {
     void init();

@@ -7,6 +7,8 @@
 
 #include <includes.h>
 #include <Engine/Engine.h>
+#include <Recorder/Recorder.h>
+#include <Clickbot/Clickbot.h>
 
 namespace Hooks::PlayLayer
 {

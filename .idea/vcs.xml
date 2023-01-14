@@ -4,6 +4,7 @@
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/libraries/cocos-headers" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/libraries/curl" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libraries/fmod-headers" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/libraries/gd.h" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/libraries/imgui" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/libraries/imgui-hook" vcs="Git" />

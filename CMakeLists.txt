@@ -18,7 +18,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES})
 add_definitions(-DCURL_STATICLIB)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-        libraries/imgui-spectrum
+        libraries/imgui
         libraries/imgui-hook
         libraries/gd.h
         libraries/gd.h/include
@@ -29,6 +29,7 @@ add_subdirectory(libraries/minhook)
 add_subdirectory(libraries/imgui-hook)
 add_subdirectory(libraries/cocos-headers)
 add_subdirectory(libraries/curl)
+add_subdirectory(libraries/fmod-headers)
 
 target_link_libraries(${PROJECT_NAME}
         imgui-hook
@@ -36,6 +37,7 @@ target_link_libraries(${PROJECT_NAME}
         opengl32
         cocos2d
         libcurl
+        fmod
         ${CMAKE_SOURCE_DIR}/libraries/glew32.lib
         ${CMAKE_SOURCE_DIR}/libraries/cocos-headers/cocos2dx/libcocos2d.lib
         )

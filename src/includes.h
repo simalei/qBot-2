@@ -16,6 +16,8 @@
 #include <chrono>
 
 #include <imgui.h>
+#include <imgui_internal.h>
+#include <misc/cpp/imgui_stdlib.h>
 #include <imgui-hook.hpp>
 #include <minhook.h>
 
@@ -24,5 +26,10 @@
 
 #include <gd.h>
 
+#include <curl/curl.h>
+
+#include <fmod.hpp>
+
+using namespace cocos2d;
 
 #endif //QBOT_2_INCLUDES_H
