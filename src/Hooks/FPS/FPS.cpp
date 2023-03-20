@@ -16,6 +16,8 @@ void __fastcall hkCCSchedulerUpdate(CCScheduler* self, int, float dt) {
         return CCScheduler_update(self, dt);
     auto speedhack = self->getTimeScale();
 
+
+
     const float newdt = 1.f / Engine::settings.fps / speedhack;
     g_disable_render = true;
 

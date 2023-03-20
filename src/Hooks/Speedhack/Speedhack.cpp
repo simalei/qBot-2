@@ -5,5 +5,6 @@
 #include "Speedhack.h"
 
 void setSpeed() {
-    CCDirector::sharedDirector()->getScheduler()->setTimeScale(Engine::settings.speed);
+    Speedhack::SetSpeed(Engine::settings.speed);
+    //CCDirector::sharedDirector()->getScheduler()->setTimeScale(Engine::settings.speed);
 }

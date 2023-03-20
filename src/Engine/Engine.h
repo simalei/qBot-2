@@ -8,6 +8,7 @@
 #include <includes.h>
 #include <Hooks/PlayLayer/PlayLayer.h>
 #include <Recorder/Recorder.h>
+#include <Hooks/FPS/FPS.h>
 namespace Engine {
 
 
@@ -17,13 +18,15 @@ namespace Engine {
         float rotation;
         double yAccel;
         bool buttonPushed;
+        bool isHolding;
+        bool isSliding;
+        float playerSpeed;
     };
 
     struct Click {
         int fps;
         int frame;
-        PlayerStorage P1;
-        PlayerStorage P2;
+        float xpos;
         bool action;
         bool player;
     };
@@ -33,6 +36,8 @@ namespace Engine {
         PlayerStorage P1;
         PlayerStorage P2;
     };
+
+
 
     struct Settings {
         float fps;
@@ -57,6 +62,12 @@ namespace Engine {
         std::string recName, recCodec, recBitrate, recExtraArgs, recExtraAudioArgs;
         int recWidth, recHeight, recFps;
         bool recIncludeAudio;
+
+        // sequence
+        bool sequenceEnabled;
+        bool randomSequenceEnabled;
+        int sequenceIndex;
+        bool sequenceFirstRun;
     };
 
 
@@ -68,6 +79,8 @@ namespace Engine {
     extern std::vector<Click> replay;
     extern std::vector<Checkpoint> checkpoints;
     extern Settings settings;
+
+    extern std::vector<std::string> sequence;
 
     extern void handleInit(gd::PlayLayer* pl);
     extern void handleUpdate(gd::PlayLayer* pl);
@@ -83,6 +96,8 @@ namespace Engine {
 
     extern void saveSettings();
     extern void loadSettings();
+
+    extern DWORD frameThread(LPVOID lpParam);
 }
 
 

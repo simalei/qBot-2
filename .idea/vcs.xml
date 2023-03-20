@@ -8,6 +8,9 @@
     <mapping directory="$PROJECT_DIR$/libraries/gd.h" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/libraries/imgui" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/libraries/imgui-hook" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libraries/imgui-notify" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libraries/machineid" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/libraries/minhook" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/libraries/speedhack" vcs="Git" />
   </component>
 </project>

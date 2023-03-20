@@ -13,6 +13,9 @@ namespace GUI {
     float tempFps;
     ImVec2 buttonSize = {230.f - 18.f, 24.f};
     std::string replayName;
+    std::string sequenceReplayName;
+    std::string copyName;
+
     std::vector<std::string> autocomplete;
     auto& rec = Recorder::get();
 
@@ -162,7 +165,12 @@ namespace GUI {
     void init()
     {
         embraceTheDarkness();
-        ImGui::GetIO().Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Tahoma.ttf", 16.f);
+        ImGuiIO* io = &ImGui::GetIO();
+
+        ImFontConfig font_cfg;
+        font_cfg.FontDataOwnedByAtlas = false;
+        io->Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\Tahoma.ttf", 16.f);
+        ImGui::MergeIconsWithLatestFont(16.f, false);
         DEVMODE dm;
         EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &dm);
 
@@ -187,16 +195,23 @@ namespace GUI {
 
         Engine::settings.volume = 1.f;
 
+
         License::loadLicenseData();
         if (License::loginUser(License::ldata.username, License::ldata.password) == 1)
         {
             License::LICENSED = true;
         }
         Engine::loadSettings();
+
+        Engine::settings.sequenceEnabled = false;
+
         tempFps = Engine::settings.fps;
         setFPS();
 
         path = std::filesystem::current_path();
+
+        if (!std::filesystem::exists(".qbot\\clicks\\clicks") || !std::filesystem::exists(".qbot\\clicks\\releases"))
+            ImGui::InsertNotification({ ImGuiToastType_Error, 3000, "Clicks not found. Clickbot is disabled"});
     }
 
 
@@ -209,8 +224,6 @@ namespace GUI {
             ImGui::SetWindowPos(ImVec2(10, 10));
 
         ImGui::Combo("Mode", &Engine::mode, "Disabled\0Record\0Playback");
-
-        ImGui::Checkbox("Accuracy fix", &Engine::settings.accuracyFixEnabled);
         ImGui::Checkbox("Ignore input on playback", &Engine::settings.ignoreUserInputEnabled);
 
         ImGui::Separator();
@@ -218,6 +231,16 @@ namespace GUI {
         ImGui::Text("Frame:");
         ImGui::SameLine();
         ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", Engine::frame);
+
+        ImGui::Text("Loaded actions:");
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", Engine::replay.size());
+
+        if (Engine::settings.sequenceEnabled) {
+            ImGui::Text("Sequence:");
+            ImGui::SameLine();
+            ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d/%d", Engine::settings.sequenceIndex + 1, Engine::sequence.size());
+        }
 
 
         ImGui::Separator();
@@ -258,6 +281,7 @@ namespace GUI {
             {
                 Engine::saveReplay(replayName);
                 updateReplaysList();
+                ImGui::InsertNotification({ ImGuiToastType_Success, 3000, "Replay successfully saved"});
             }
         }
         ImGui::SameLine();
@@ -270,12 +294,24 @@ namespace GUI {
                 tempFps = Engine::replay[0].fps;
                 setFPS();
                 updateReplaysList();
+                ImGui::InsertNotification({ ImGuiToastType_Success, 3000, "Replay successfully loaded"});
             }
         }
 
         if (ImGui::Button("Clear", buttonSize))
         {
             Engine::replay.clear();
+        }
+
+        if (ImGui::Button("Copy", buttonSize))
+        {
+            if (replayName != "")
+            {
+                copyName.clear();
+                copyName = replayName + "_Copy";
+                ImGui::OpenPopup("Copy");
+            }
+
         }
 
         if (ImGui::Button("Delete", buttonSize))
@@ -346,6 +382,21 @@ namespace GUI {
             ImGui::EndPopup();
         }
 
+        if (ImGui::BeginPopupModal("Copy", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::PushItemWidth(buttonSize.x + 5);
+            ImGui::InputText("##CopyInput", &copyName);
+            if (ImGui::Button("Copy", {buttonSize.x / 2, 0})) {
+                std::filesystem::copy_file(".qbot\\replays\\" + replayName + ".qbf2", ".qbot\\replays\\" + copyName + ".qbf2");
+                updateReplaysList();
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", {buttonSize.x / 2, 0}))
+                ImGui::CloseCurrentPopup();
+
+            ImGui::EndPopup();
+        }
+
         ImGui::End();
 
 
@@ -388,9 +439,6 @@ namespace GUI {
 
         ImGui::Checkbox("Checkpoint fix", &Engine::settings.checkpointFixEnabled);
         helpMarker("Saves more data (y acceleration, etc.) every checkpoint and restores that data after respawn");
-
-        ImGui::Checkbox("Lock delta", &Engine::settings.lockDeltaEnabled);
-        helpMarker("Locks delta time between frames while replaying. May cause slow-downs at the places of lag but also makes replay more accurate.");
 
         if (ImGui::Button("Reset layout", buttonSize))
         {
@@ -464,7 +512,7 @@ namespace GUI {
                 Engine::settings.recCodec = "h264_amf";
                 ImGui::CloseCurrentPopup();
             }
-            if (ImGui::Button("Intel CPU codec"))
+            if (ImGui::Button("Intel GPU codec"))
             {
                 Engine::settings.recCodec = "h264_qsv";
                 ImGui::CloseCurrentPopup();
@@ -479,6 +527,8 @@ namespace GUI {
                 {
                     rec.lastFrameTime = 0;
                     rec.start((".qbot\\videos\\" + Engine::settings.recName + ".mp4").c_str());
+                } else {
+                    ImGui::InsertNotification({ ImGuiToastType_Error, 3000, "Enter a level to start recording"});
                 }
             }
         } else {
@@ -503,21 +553,24 @@ namespace GUI {
         ImGui::BeginDisabled(!Engine::settings.clickbotEnabled);
 
 
-        ImGui::BeginDisabled(!std::filesystem::exists(".qbot\\clicks\\softClicks"));
+        ImGui::BeginDisabled(!std::filesystem::exists(".qbot\\clicks\\softClicks") && !std::filesystem::exists(".qbot\\clicks\\softReleases"));
         ImGui::Checkbox("Soft clicks", &Engine::settings.softClicksEnabled);
         ImGui::EndDisabled();
 
         ImGui::SameLine();
 
-        ImGui::BeginDisabled(!std::filesystem::exists(".qbot\\clicks\\hardClicks"));
+        ImGui::BeginDisabled(!std::filesystem::exists(".qbot\\clicks\\hardClicks") && !std::filesystem::exists(".qbot\\clicks\\hardReleases"));
         ImGui::Checkbox("Hard clicks", &Engine::settings.hardClicksEnabled);
         ImGui::EndDisabled();
+
+        ImGui::BeginDisabled(!std::filesystem::exists(".qbot\\clicks\\clicks") && !std::filesystem::exists(".qbot\\clicks\\releases"));
 
         ImGui::InputFloat("Soft time", &Engine::settings.softClickTime, 0.1f);
         ImGui::InputFloat("Hard time", &Engine::settings.hardClickTime, 0.1f);
 
         ImGui::SliderFloat("Volume", &Engine::settings.volume, 0.f, 1.5f, "%.1f");
 
+        ImGui::EndDisabled();
 
         ImGui::EndDisabled();
 
@@ -529,9 +582,9 @@ namespace GUI {
         if (sortWindows)
             ImGui::SetWindowPos(ImVec2(970, 10));
 
-        ImGui::BeginChild("ChildL", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 285), false);
+        ImGui::BeginChild("ChildL", ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 310), false);
 
-        ImGui::InputTextMultiline("##editor", &convertedMacro, ImVec2(140, 285));
+        ImGui::InputTextMultiline("##editor", &convertedMacro, ImVec2(140, 310));
         ImGui::EndChild();
 
         ImGui::SameLine();
@@ -562,12 +615,84 @@ namespace GUI {
         ImGui::EndChild();
         ImGui::End();
 
+        ImGui::Begin("Sequence", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
+
+        ImGui::SetWindowSize(ImVec2(230,155));
+        if (sortWindows) {
+            ImGui::SetWindowPos(ImVec2(730, 205));
+        }
+
+
+        if (ImGui::BeginChild("##sequenceChild", ImVec2(NULL, 60), true))
+        {
+            for (size_t n = 0; n < Engine::sequence.size(); n++)
+            {
+                bool is_selected = (Engine::settings.sequenceIndex == n);
+                std::string anticonflict = Engine::sequence[n] + "##" + std::to_string(n);
+                if (ImGui::Selectable(anticonflict.c_str(), is_selected)) Engine::settings.sequenceIndex = n;
+            }
+            ImGui::EndChild();
+        }
+
+
+        ImGui::PushItemWidth(buttonSize.x - 50);
+        const bool is_input_text_enter_pressed2 = ImGui::InputText("##sequenceInput", &sequenceReplayName, ImGuiInputTextFlags_EnterReturnsTrue);
+        const bool is_input_text_active2 = ImGui::IsItemActive();
+        const bool is_input_text_activated2 = ImGui::IsItemActivated();
+
+        if (is_input_text_activated2)
+            ImGui::OpenPopup("##popup");
+
+        {
+            ImGui::SetNextWindowPos(ImVec2(ImGui::GetItemRectMin().x, ImGui::GetItemRectMax().y));
+            ImGui::SetNextWindowSize({ ImGui::GetItemRectSize().x, 0 });
+            if (ImGui::BeginPopup("##popup", ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_ChildWindow))
+            {
+                for (int i = 0; i < autocomplete.size(); i++)
+                {
+                    if (strstr(autocomplete[i].c_str(), sequenceReplayName.c_str()) == NULL)
+                        continue;
+                    if (ImGui::Selectable(autocomplete[i].c_str()))
+                    {
+                        ImGui::ClearActiveID();
+                        sequenceReplayName = autocomplete[i];
+                    }
+                }
+
+                if (is_input_text_enter_pressed2 || (!is_input_text_active2 && !ImGui::IsWindowFocused()))
+                    ImGui::CloseCurrentPopup();
+
+                ImGui::EndPopup();
+            }
+        }
+
+        ImGui::SameLine();
+        if (ImGui::Button("+", {20.f, 0})) {
+            Engine::sequence.push_back(sequenceReplayName);
+            Engine::settings.sequenceFirstRun = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("-", {20.f, 0})) {
+            if (Engine::sequence.size() > (size_t)Engine::settings.sequenceIndex) {
+                Engine::sequence.erase(Engine::sequence.begin()+Engine::settings.sequenceIndex);
+                Engine::settings.sequenceFirstRun = true;
+            }
+        }
+
+
+        ImGui::Checkbox("Enabled", &Engine::settings.sequenceEnabled);
+        ImGui::SameLine();
+        ImGui::BeginDisabled(!Engine::settings.sequenceEnabled);
+        ImGui::Checkbox("Random sequence", &Engine::settings.randomSequenceEnabled);
+        ImGui::EndDisabled();
+
+        ImGui::End();
 
         ImGui::Begin("About", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
 
         ImGui::SetWindowSize(ImVec2(230,155));
         if (sortWindows) {
-            ImGui::SetWindowPos(ImVec2(730, 205));
+            ImGui::SetWindowPos(ImVec2(1280, 10));
             sortWindows = false;
         }
 
@@ -582,7 +707,7 @@ namespace GUI {
 
         ImGui::Text("Build date:");
         ImGui::SameLine();
-        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "14 Jan 2022");
+        ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "20 Mar 2022");
 
         ImGui::Text("ImGui version:");
         ImGui::SameLine();
@@ -621,8 +746,9 @@ namespace GUI {
                         License::saveLicenseData();
                     }
                     License::LICENSED = true;
+                    ImGui::InsertNotification({ ImGuiToastType_Success, 3000, "Successfully logged in"});
                 } else {
-                    ImGui::OpenPopup("Login: Failed");
+                    ImGui::InsertNotification({ ImGuiToastType_Error, 3000, "Failed to login"});
                 }
             }
             if (ImGui::Button("Go back", btnSize))
@@ -641,12 +767,12 @@ namespace GUI {
                 {
                     if (License::registerUser(License::ldata.username, License::ldata.password, License::ldata.licenseKey) == 1)
                     {
-                        ImGui::OpenPopup("Register: Success");
+                        ImGui::InsertNotification({ ImGuiToastType_Success, 3000, "Registered successfully! Thanks for purchasing qBot"});
                     } else {
-                        ImGui::OpenPopup("Register: Failed");
+                        ImGui::InsertNotification({ ImGuiToastType_Error, 3000, "Failed to register. Check your details and internet connection"});
                     }
                 } else {
-                    //ImGui::InsertNotification({ ImGuiToastType_Error, 3000, "Passwords do not match"});
+                    ImGui::InsertNotification({ ImGuiToastType_Error, 3000, "Passwords do not match"});
                 }
             }
             if (ImGui::Button("Go back", btnSize))
@@ -664,46 +790,6 @@ namespace GUI {
             {
                 _register = true;
                 _login = false;
-            }
-        }
-        if (ImGui::BeginPopupModal("Register: Success", nullptr, ImGuiWindowFlags_NoResize))
-        {
-            auto windowWidth = ImGui::GetWindowSize().x;
-            auto textWidth = ImGui::CalcTextSize("Registered successfully. Thanks for purchasing qBot!").x;
-            ImGui::SetWindowSize({325,79});
-            ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-            ImGui::Text("Registered successfully. Thanks for purchasing qBot!");
-            if (ImGui::Button("OK", {textWidth, 20.f}))
-            {
-                ImGui::CloseCurrentPopup();
-            }
-        }
-
-        if (ImGui::BeginPopupModal("Register: Failed",nullptr, ImGuiWindowFlags_NoResize))
-        {
-            auto windowWidth = ImGui::GetWindowSize().x;
-            auto textWidth   = ImGui::CalcTextSize("Registration failed. Check your license key.").x;
-            ImGui::SetWindowSize({267,78});
-
-            ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-            ImGui::Text("Registration failed. Check your license key.");
-            if (ImGui::Button("OK", {textWidth, 20.f}))
-            {
-                ImGui::CloseCurrentPopup();
-            }
-        }
-
-        if (ImGui::BeginPopupModal("Login: Failed",nullptr, ImGuiWindowFlags_NoResize))
-        {
-            auto windowWidth = ImGui::GetWindowSize().x;
-            auto textWidth   = ImGui::CalcTextSize("Logging in failed. Check your account details.").x;
-            ImGui::SetWindowSize({285,78});
-
-            ImGui::SetCursorPosX((windowWidth - textWidth) * 0.5f);
-            ImGui::Text("Logging in failed. Check your account details.");
-            if (ImGui::Button("OK", {textWidth, 20.f}))
-            {
-                ImGui::CloseCurrentPopup();
             }
         }
         ImGui::End();
@@ -727,5 +813,6 @@ namespace GUI {
             }
             //ImGui::ShowDemoWindow();
         }
+        ImGui::RenderNotifications(); // <-- Here we render all notifications
     }
 }

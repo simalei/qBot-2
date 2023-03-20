@@ -19,3 +19,12 @@
 [submodule "libraries/fmod-headers"]
 	path = libraries/fmod-headers
 	url = https://github.com/adarift/fmod-headers
+[submodule "libraries/machineid"]
+	path = libraries/machineid
+	url = https://github.com/Tarik02/machineid
+[submodule "libraries/imgui-notify"]
+	path = libraries/imgui-notify
+	url = https://github.com/patrickcjk/imgui-notify
+[submodule "libraries/speedhack"]
+	path = libraries/speedhack
+	url = https://github.com/absoIute/Speedhack

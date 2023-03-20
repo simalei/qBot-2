@@ -73,7 +73,7 @@ namespace Converter {
                 }
 
             }
-            Engine::replay.push_back({fps, frame, -1, -1, -1, -1, false, -1, -1, -1, -1,false, action, player});
+            Engine::replay.push_back({fps, frame, -1, action, player});
         }
     }
 }

@@ -18,19 +18,23 @@ namespace Hooks::PlayLayer
 
     void __fastcall hkUpdate(gd::PlayLayer* self, void*, float delta)
     {
+        if (self->m_player1->getPositionX() == 0)
+        {
+            Engine::frame = 0;
+        } else if (!self->m_isDead) {
+            Engine::frame++;
+        }
+
         if (rec.recording)
         {
             rec.handleRecording(self, delta);
         }
-
-        if (Engine::settings.lockDeltaEnabled && Engine::mode == 2)
+        if (Engine::mode == 2)
         {
             update(self, 1 / Engine::settings.fps);
         } else {
             update(self, delta);
         }
-
-
         Engine::handleUpdate(self);
     }
 
@@ -42,18 +46,17 @@ namespace Hooks::PlayLayer
 
     int __fastcall hkResetLevel(gd::PlayLayer* self)
     {
+        auto rs = resetLevel(self);
         Engine::frame = 0;
         Engine::handleReset(self);
-        resetLevel(self);
         if (rec.recording) {
             rec.updateSongOffset(self);
         }
-        return 0;
+        return rs;
     }
 
     bool __fastcall hkPushButton(gd::PlayLayer* self, uintptr_t, int state, bool player)
     {
-
         Engine::handlePush(self, player);
         if (Engine::settings.ignoreUserInputEnabled && Engine::mode == 2)
             return false;
@@ -69,7 +72,9 @@ namespace Hooks::PlayLayer
     {
         Engine::handleRelease(self, player);
         if (Engine::settings.ignoreUserInputEnabled && Engine::mode == 2)
+        {
             return false;
+        }
         if (Engine::settings.dualClickEnabled)
         {
             Engine::handleRelease(self, !player);
@@ -85,13 +90,15 @@ namespace Hooks::PlayLayer
 
     int __fastcall hkCreateCheckpoint(gd::PlayLayer* self)
     {
+        auto rs = createCheckpoint(self);
         Engine::createCheckpoint(self);
-        return createCheckpoint(self);
+        return rs;
     }
 
     int __fastcall hkRemoveCheckpoint(gd::PlayLayer* self)
     {
+        auto rs = removeCheckpoint(self);
         Engine::removeCheckpoint(self);
-        return removeCheckpoint(self);
+        return rs;
     }
 } // namespace Hooks::PlayLayer

@@ -30,6 +30,9 @@
 
 #include <fmod.hpp>
 
+#include <machineid/machineid.h>
+#include <imgui_notify.h>
+
 using namespace cocos2d;
 
 #endif //QBOT_2_INCLUDES_H

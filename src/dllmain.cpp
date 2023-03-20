@@ -11,12 +11,15 @@ DWORD MainThread(LPVOID lpParam)
     _mkdir(".qbot\\replays");
     _mkdir(".qbot\\videos");
     _mkdir(".qbot\\clicks");
+
     MH_Initialize();
+
+    /*
     AllocConsole();
     freopen("CONOUT$", "w", stdout);
     freopen("CONIN$", "r", stdin);
-
-
+    */
+    Speedhack::Setup(); // thank you absolute
     Clickbot::init(); // FMod initialization
 
     ImGuiHook::setInitFunction(GUI::init);
@@ -24,8 +27,7 @@ DWORD MainThread(LPVOID lpParam)
 
     ImGuiHook::setToggleCallback([]() {
         GUI::visible = !GUI::visible;
-        if (GUI::visible)
-            GUI::updateReplaysList();
+        GUI::updateReplaysList();
     });
 
     ImGuiHook::setToggleKey(VK_RCONTROL);
@@ -33,7 +35,6 @@ DWORD MainThread(LPVOID lpParam)
     ImGuiHook::setupHooks([](void* target, void* hook, void** trampoline) {
         MH_CreateHook(target, hook, trampoline);
     });
-
     Hooks::init(); // All GD-related hooks
 
     MH_EnableHook(MH_ALL_HOOKS);

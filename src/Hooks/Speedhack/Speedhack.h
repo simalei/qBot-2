@@ -7,7 +7,7 @@
 
 #include <includes.h>
 #include <Engine/Engine.h>
+#include "speedhack_classic.h"
 
 extern void setSpeed();
-
 #endif //QBOT_SPEEDHACK_H

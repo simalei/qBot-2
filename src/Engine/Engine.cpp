@@ -6,11 +6,11 @@
 
 
 namespace Engine {
-
     std::vector<Click> replay;
     std::vector<Checkpoint> checkpoints;
+    std::vector<std::string> sequence;
 
-    int frame;
+    int frame = 0;
     int mode = 0;
     bool inLevel = false;
     bool p1ButtonPushed = false;
@@ -21,6 +21,11 @@ namespace Engine {
         frame = 0;
         inLevel = true;
         checkpoints.clear();
+        /*
+        if (Engine::settings.sequenceEnabled) {
+            loadReplay(sequence[sequenceIndex]);
+        }
+         */
     }
 
     void handleUpdate(gd::PlayLayer *pl) {
@@ -39,33 +44,13 @@ namespace Engine {
 
         } else if (Engine::mode == 2)
         {
-
             for (size_t i = 0; i <= replay.size(); i++) {
                 while (replay[i].frame == frame)
                 {
-                    if (replay[i].action)
-                        {
-                        if (Engine::settings.accuracyFixEnabled && replay[i].P1.xpos != -1)
-                        {
-                            pl->m_player1->setPositionX(replay[i].P1.xpos);
-                            pl->m_player2->setPositionX(replay[i].P2.xpos);
-                            pl->m_player1->setPositionY(replay[i].P1.ypos);
-                            pl->m_player2->setPositionY(replay[i].P2.ypos);
-                            pl->m_player1->setRotation(replay[i].P1.rotation);
-                            pl->m_player2->setRotation(replay[i].P2.rotation);
-                        }
+                    if (replay[i].action) {
                         Hooks::PlayLayer::pushButton(pl, 0, replay[i].player);
                         Clickbot::push();
-                        } else {
-                        if (Engine::settings.accuracyFixEnabled && replay[i].P1.xpos != -1)
-                        {
-                            pl->m_player1->setPositionX(replay[i].P1.xpos);
-                            pl->m_player2->setPositionX(replay[i].P2.xpos);
-                            pl->m_player1->setPositionY(replay[i].P1.ypos);
-                            pl->m_player2->setPositionY(replay[i].P2.ypos);
-                            pl->m_player1->setRotation(replay[i].P1.rotation);
-                            pl->m_player2->setRotation(replay[i].P2.rotation);
-                        }
+                    } else {
                         Hooks::PlayLayer::releaseButton(pl, 0, replay[i].player);
                         Clickbot::release();
                     }
@@ -88,8 +73,7 @@ namespace Engine {
             click.fps = (int)settings.fps;
             click.action = true;
             click.player = player;
-            click.P1 = {pl->m_player1->getPositionX(), pl->m_player1->getPositionY(), pl->m_player1->getRotation(), pl->m_player1->m_yAccel};
-            click.P2 = {pl->m_player2->getPositionX(), pl->m_player2->getPositionY(), pl->m_player2->getRotation(), pl->m_player2->m_yAccel};
+            click.xpos = pl->m_player1->getPositionX();
             replay.push_back(click);
         }
     }
@@ -107,8 +91,7 @@ namespace Engine {
             click.fps = (int)settings.fps;
             click.action = false;
             click.player = player;
-            click.P1 = {pl->m_player1->getPositionX(), pl->m_player1->getPositionY(), pl->m_player1->getRotation(), pl->m_player1->m_yAccel};
-            click.P2 = {pl->m_player2->getPositionX(), pl->m_player2->getPositionY(), pl->m_player2->getRotation(), pl->m_player2->m_yAccel};
+            click.xpos = pl->m_player1->getPositionX();
             replay.push_back(click);
         }
     }
@@ -121,9 +104,27 @@ namespace Engine {
             Hooks::PlayLayer::releaseButton(pl, 0, false);
         }
 
+        if (Engine::settings.sequenceEnabled && Engine::mode == 2) {
+            if (Engine::settings.randomSequenceEnabled) {
+                settings.sequenceIndex = rand() % Engine::sequence.size();
+                loadReplay(Engine::sequence[settings.sequenceIndex]);
+            } else {
+                if (settings.sequenceFirstRun)  {
+                    settings.sequenceIndex = 0;
+                    settings.sequenceFirstRun = false;
+                } else {
+                    settings.sequenceIndex++;
+                }
+
+                if (Engine::sequence.size() <= (size_t)Engine::settings.sequenceIndex) Engine::settings.sequenceIndex = 0;
+                loadReplay(Engine::sequence[settings.sequenceIndex]);
+            }
+        }
+
         if (checkpoints.size() != 0 && replay.size() != 0)
         {
             frame = checkpoints.back().frame;
+
             if (Engine::settings.checkpointFixEnabled)
             {
                 pl->m_player1->setPositionX(checkpoints.back().P1.xpos);
@@ -134,6 +135,12 @@ namespace Engine {
                 pl->m_player2->setRotation(checkpoints.back().P2.rotation);
                 pl->m_player1->m_yAccel = checkpoints.back().P1.yAccel;
                 pl->m_player2->m_yAccel = checkpoints.back().P2.yAccel;
+                pl->m_player1->m_isHolding = checkpoints.back().P1.isHolding;
+                pl->m_player2->m_isHolding = checkpoints.back().P2.isHolding;
+                pl->m_player1->m_isSliding = checkpoints.back().P1.isSliding;
+                pl->m_player2->m_isSliding = checkpoints.back().P2.isSliding;
+                pl->m_player1->m_playerSpeed = checkpoints.back().P1.playerSpeed;
+                pl->m_player2->m_playerSpeed = checkpoints.back().P2.playerSpeed;
 
                 if (checkpoints.back().P1.buttonPushed)
                 {
@@ -166,11 +173,18 @@ namespace Engine {
             checkpoint.P1.ypos = pl->m_player1->getPositionY();
             checkpoint.P1.rotation = pl->m_player1->getRotation();
             checkpoint.P1.yAccel = pl->m_player1->m_yAccel;
+            checkpoint.P1.isHolding = pl->m_player1->m_isHolding;
+            checkpoint.P1.isSliding = pl->m_player1->m_isSliding;
+            checkpoint.P1.playerSpeed = pl->m_player1->m_playerSpeed;
             checkpoint.P1.buttonPushed = p1ButtonPushed;
+
             checkpoint.P2.xpos = pl->m_player2->getPositionX();
             checkpoint.P2.ypos = pl->m_player2->getPositionY();
             checkpoint.P2.rotation = pl->m_player2->getRotation();
             checkpoint.P2.yAccel = pl->m_player2->m_yAccel;
+            checkpoint.P2.isHolding = pl->m_player2->m_isHolding;
+            checkpoint.P2.isSliding = pl->m_player2->m_isSliding;
+            checkpoint.P2.playerSpeed = pl->m_player2->m_playerSpeed;
             checkpoint.P2.buttonPushed = p2ButtonPushed;
         }
         checkpoints.push_back(checkpoint);
@@ -197,6 +211,7 @@ namespace Engine {
         in.seekg(0);
         in.read((char*)replay.data(),sizeof(Click)*count);
         Engine::mode = 2;
+        setFPS();
     }
 
     void saveSettings() {
